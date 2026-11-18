@@ -22,8 +22,6 @@ import (
 	"github.com/arwyn-s/waytick/internal/waybar"
 )
 
-const tickEvery = 250 * time.Millisecond
-
 // Dir is $XDG_RUNTIME_DIR/waytick. or tmp/waytick-xxxxx/
 func Dir() string {
 	base := os.Getenv("XDG_RUNTIME_DIR")
@@ -60,6 +58,7 @@ type Daemon struct {
 	subs  map[chan []byte]struct{}
 	notes chan *notify.Notification // nil = close the current one
 	notif *notify.Notifier
+	wake  *time.Timer // fires tick at the next moment the state can change
 }
 
 func Run() error {
@@ -78,13 +77,12 @@ func Run() error {
 		notes: make(chan *notify.Notification, 16),
 	}
 	d.notif = &notify.Notifier{AppName: "waytick", OnAction: d.onAction}
+	d.wake = time.AfterFunc(time.Hour, d.tick)
+	d.wake.Stop()
 	d.load()
 	go d.notifyWorker()
 
-	d.mu.Lock()
-	d.step(time.Now(), nil) // fire anything that came due while we were down
-	d.mu.Unlock()
-	go d.tickLoop()
+	d.tick() // fire anything that came due while we were down, and arm d.wake
 
 	log.Printf("waytick: listening on %s", SocketPath())
 	for {
@@ -135,16 +133,16 @@ func (d *Daemon) persist() {
 	d.saved = b
 }
 
-func (d *Daemon) tickLoop() {
-	for now := range time.Tick(tickEvery) {
-		d.mu.Lock()
-		d.step(now, nil)
-		d.mu.Unlock()
-	}
+// tick is run by d.wake.
+func (d *Daemon) tick() {
+	d.mu.Lock()
+	d.step(time.Now(), nil)
+	d.mu.Unlock()
 }
 
-// step runs a tick, handles events, persists and broadcasts. Caller holds d.mu.
-// extra are events produced by a command just applied.
+// step runs a tick, handles events, persists, broadcasts and schedules the
+// next wake. Caller holds d.mu. extra are events produced by a command just
+// applied.
 func (d *Daemon) step(now time.Time, extra []timer.Event) {
 	evs := append(extra, d.t.Tick(now)...)
 	for _, ev := range evs {
@@ -152,6 +150,11 @@ func (d *Daemon) step(now time.Time, extra []timer.Event) {
 	}
 	d.persist()
 	d.broadcast(now)
+	if wait, ok := nextWake(&d.t, now); ok {
+		d.wake.Reset(wait)
+	} else {
+		d.wake.Stop() // idle or paused: only a command can change anything
+	}
 }
 
 func (d *Daemon) broadcast(now time.Time) {

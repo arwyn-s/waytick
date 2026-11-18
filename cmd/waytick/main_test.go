@@ -13,7 +13,7 @@ import (
 // the request it would have sent to the daemon.
 func parseStart(args []string, now time.Time) (daemon.Request, error) {
 	var got daemon.Request
-	app := newApp(func() time.Time { return now }, func(r daemon.Request) (daemon.Response, error) {
+	app := cliApp(func() time.Time { return now }, func(r daemon.Request) (daemon.Response, error) {
 		got = r
 		return daemon.Response{OK: true}, nil
 	})
