@@ -1,0 +1,13 @@
+[Unit]
+Description=waytick countdown timer daemon
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=%h/.local/bin/waytick daemon
+Restart=on-failure
+# Optional alarm sound played with paplay when a timer finishes:
+# Environment=WAYTICK_SOUND=/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga
+
+[Install]
+WantedBy=graphical-session.target

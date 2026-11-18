@@ -1,0 +1,16 @@
+// waytick: waybar module.
+// 1. Add "custom/waytick" to one of your module lists, e.g.
+//      "modules-right": ["tray", "custom/waytick", "network", "battery"],
+// 2. Paste the block below into your waybar config (top level, next to other modules).
+// Do NOT set "interval": `waytick watch` streams updates itself.
+// Absolute paths are used because waybar may not have ~/.local/bin on PATH.
+{
+    "custom/waytick": {
+        "exec": "~/.local/bin/waytick watch",
+        "return-type": "json",
+        "on-click": "~/.config/rofi/launchers/waytick.sh",
+        "on-click-middle": "~/.local/bin/waytick toggle",
+        "on-click-right": "~/.local/bin/waytick cancel",
+        "on-scroll-up": "~/.local/bin/waytick add 1m"
+    }
+}

@@ -1,0 +1,48 @@
+version: '3'
+
+vars:
+  PREFIX: '{{.PREFIX | default (print (env "HOME") "/.local")}}'
+  BINDIR: '{{.PREFIX}}/bin'
+  UNITDIR: '{{env "HOME"}}/.config/systemd/user'
+  ROFIDIR: '{{.ROFIDIR | default (print (env "HOME") "/.config/rofi/launchers")}}'
+
+tasks:
+  default:
+    cmds:
+      - "{{.TASK_EXE}} --list"
+    silent: true
+
+  build:
+    desc: Build the waytick binary
+    sources:
+      - go.mod
+      - go.sum
+      - '**/*.go'
+    generates:
+      - waytick
+    cmds:
+      - go build -o waytick ./cmd/waytick
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
+
+  install:
+    desc: Install binary, rofi launcher + systemd user service and (re)start it
+    deps: [build]
+    cmds:
+      - install -Dm755 waytick {{.BINDIR}}/waytick
+      - install -Dm755 scripts/waytick-rofi {{.ROFIDIR}}/waytick.sh
+      - install -Dm644 dist/waytick.service {{.UNITDIR}}/waytick.service
+      - systemctl --user daemon-reload
+      - systemctl --user enable --now waytick
+      - systemctl --user restart waytick
+
+  uninstall:
+    desc: Remove binary, rofi launcher + systemd user service
+    cmds:
+      - cmd: systemctl --user disable --now waytick
+        ignore_error: true
+      - rm -f {{.BINDIR}}/waytick {{.ROFIDIR}}/waytick.sh {{.BINDIR}}/waytick-rofi {{.UNITDIR}}/waytick.service
+      - systemctl --user daemon-reload

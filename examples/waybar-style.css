@@ -1,0 +1,82 @@
+/* waytick: waybar pill styling.
+ * Paste into ~/.config/waybar/style.css.
+ * The palette below matches the sample theme; delete any @define-color
+ * your style.css already defines, or swap in your own colours. */
+@define-color base         #000000;
+@define-color text         #c8d3f5;
+@define-color subtext      #828bb8;
+@define-color accent       #3e68d7;
+@define-color accent2      #89ddff;
+@define-color red          #ff757f;
+@define-color yellow       #ffc777;
+@define-color pill-a       alpha(@accent, 0.22);
+@define-color pill-b       alpha(@accent2, 0.08);
+@define-color pill-edge    alpha(@accent2, 0.30);
+@define-color pill-edge-hi alpha(@accent2, 0.65);
+
+@keyframes critical-pulse {
+  to { border-color: alpha(@red, 0.2); }
+}
+
+/* ── waytick timer ──────────────────────────────────────── */
+/* idle prints empty text, so waybar hides the pill entirely */
+#custom-waytick {
+  margin: 6px 3px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid @pill-edge;
+  background-image: linear-gradient(45deg, @pill-a, @pill-b);
+  color: @accent2;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+#custom-waytick:hover {
+  border-color: @pill-edge-hi;
+}
+
+/* scheduled: waiting to start, faint dashed outline */
+#custom-waytick.scheduled {
+  background-image: none;
+  border-style: dashed;
+  color: @subtext;
+}
+
+/* running: wash warms from accent toward yellow as time elapses (p0..p9) */
+#custom-waytick.running.p0,
+#custom-waytick.running.p1,
+#custom-waytick.running.p2 { background-image: linear-gradient(45deg, alpha(@accent, 0.30), alpha(@accent2, 0.10)); }
+#custom-waytick.running.p3,
+#custom-waytick.running.p4 { background-image: linear-gradient(45deg, alpha(@accent, 0.35), alpha(@accent2, 0.18)); }
+#custom-waytick.running.p5,
+#custom-waytick.running.p6 { background-image: linear-gradient(45deg, alpha(@accent2, 0.28), alpha(@yellow, 0.10)); color: @text; }
+#custom-waytick.running.p7,
+#custom-waytick.running.p8,
+#custom-waytick.running.p9 { background-image: linear-gradient(45deg, alpha(@yellow, 0.28), alpha(@yellow, 0.10)); color: @yellow; border-color: alpha(@yellow, 0.45); }
+
+/* warning: last 10% */
+#custom-waytick.warning {
+  color: @red;
+  border-color: alpha(@red, 0.7);
+  background-image: linear-gradient(45deg, alpha(@red, 0.25), alpha(@yellow, 0.10));
+  animation: critical-pulse 1s ease-in-out infinite alternate;
+}
+
+#custom-waytick.paused {
+  background-image: none;
+  color: @subtext;
+  border-color: alpha(@subtext, 0.4);
+}
+
+/* done: red flash for 10s, then the pill hides */
+#custom-waytick.done {
+  color: @base;
+  border-color: transparent;
+  background-image: none;
+  background-color: @red;
+  animation: waytick-flash 0.5s steps(1) infinite alternate;
+}
+
+@keyframes waytick-flash {
+  to { background-color: alpha(@red, 0.35); color: @red; }
+}
+

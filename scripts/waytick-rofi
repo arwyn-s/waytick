@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# rofi frontend for waytick.
+#   idle:   pick a preset or type "<dur> [@+delay | @HH:MM]"  e.g. 25m @+1m, 1h30m @14:00
+#   active: pause/resume, +5m, cancel, new timer
+set -u
+
+THEME="${WAYTICK_ROFI_THEME:-launcher}"
+# waybar / Hyprland may not have ~/.local/bin on PATH
+WT="$(command -v waytick || echo "$HOME/.local/bin/waytick")"
+waytick() { "$WT" "$@"; }
+PRESETS=$'5m\n10m\n25m\n1h\n25m @+1m'
+
+menu() { rofi -dmenu -i -theme "$THEME" -p "$1" -mesg "${2:-}"; }
+
+err() { notify-send -a waytick -u low "waytick" "$1"; }
+
+# "<dur> [@+delay | @HH:MM]" -> waytick start ...
+start_from() {
+    local dur when out
+    read -r dur when _ <<<"$1"
+    [[ -z "${dur:-}" ]] && return 0
+    local args=(start "$dur")
+    case "${when:-}" in
+        "")   ;;
+        @+*)  args+=(--in "${when#@+}") ;;
+        @*)   args+=(--at "${when#@}") ;;
+        *)    err "unexpected '$when' (use @+1m or @14:30)"; return 1 ;;
+    esac
+    if ! out=$(waytick "${args[@]}" 2>&1); then
+        err "${out#waytick: }"
+        return 1
+    fi
+}
+
+new_timer() {
+    local choice
+    while choice=$(menu "timer" "Go durations: 45s 25m 1h30m · delay: @+1m · at: @14:30" <<<"$PRESETS"); do
+        start_from "$choice" && return
+    done
+}
+
+read -r state text <<<"$(waytick status 2>/dev/null || echo "error")"
+case "$state" in
+    error)
+        err "daemon not running (systemctl --user start waytick)"; exit 1 ;;
+    idle|done|"")
+        new_timer ;;
+    *)
+        toggle="󰏤  pause"
+        [[ "$state" == paused ]] && toggle="󰐊  resume"
+        [[ "$state" == scheduled ]] && toggle=""
+        opts=$(printf '%s\n' ${toggle:+"$toggle"} "󰐕  +5m" "󰜺  cancel" "󰔛  new timer")
+        choice=$(menu "$state" "$text" <<<"$opts") || exit 0
+        case "$choice" in
+            *pause|*resume) waytick toggle ;;
+            *+5m)           waytick add 5m ;;
+            *cancel)        waytick cancel ;;
+            *"new timer")   new_timer ;;
+        esac ;;
+esac

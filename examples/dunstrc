@@ -1,0 +1,19 @@
+# waytick: optional dunst rules (~/.config/dunst/dunstrc), then `dunstctl reload`.
+
+# Let waytick alerts through while dunst is in do-not-disturb.
+# dunst shows a notification only if override_pause_level is GREATER than the
+# current pause level. `dunstctl set-paused true` pauses at level 100, which
+# nothing can beat, so for a DND that still lets timers through, pause with:
+#     dunstctl set-pause-level 90      # DND on  (waytick still shows)
+#     dunstctl set-pause-level 0       # DND off
+[waytick]
+    appname = waytick
+    override_pause_level = 95
+
+# Optional: make the "done" alert stand out.
+[waytick-done]
+    appname = waytick
+    urgency = critical
+    background = "#ff757f"
+    foreground = "#000000"
+    frame_color = "#ff757f"
