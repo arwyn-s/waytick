@@ -28,7 +28,7 @@ Arch: `sudo pacman -S waybar rofi dunst libnotify`
 Download the release tarball, then install the binary, the rofi launcher and the systemd user service:
 
 ```sh
-VER=0.0.2
+VER=0.1.0
 curl -fsSL "https://github.com/arwyn-s/waytick/releases/download/v$VER/waytick_${VER}_linux_amd64.tar.gz" | tar -xz
 cd "waytick_${VER}_linux_amd64"
 
